@@ -1,0 +1,9 @@
+[project]
+name = "codecrafters-http-server-python"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "pyparsing~=3.0",
+    "lark~=1.1",
+]

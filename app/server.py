@@ -1,14 +1,26 @@
+import logging
 import socket
 from http import HTTPStatus
+from textwrap import dedent
+
+from app.models import Response
+from app.models.request import Request
+from app.router import Router
+
+logger = logging.getLogger(__name__)
 
 
 class HttpServer:
     VERSION = "HTTP/1.1"
     CRLF = "\r\n"
+    BUFFER_SIZE = 1024
 
-    def __init__(self, host, port, *, reuse_port=True):
+    def __init__(
+        self, host: str, port: int, router: Router, *, reuse_port: bool = True
+    ):
         self.host = host
         self.port = port
+        self.router = router
         self.reuse_port = reuse_port
         self.server_socket = self._create_socket()
 
@@ -36,7 +48,15 @@ class HttpServer:
         self.server_socket.close()
 
     def handle_client(self, client_socket, client_address):
-        request = client_socket.recv(1024)
-        print(f"Received request: {request.decode()} from {client_address}")
-        response = f"{self.VERSION} {HTTPStatus.OK.value} {HTTPStatus.OK.phrase}{self.CRLF}{self.CRLF}"
-        client_socket.send(response.encode())
+        logger.info(f"Client {client_address[0]}:{client_address[1]}")
+        raw_request = client_socket.recv(self.BUFFER_SIZE).decode()
+        request = Request.from_raw(raw_request)
+        response = self.router.route(request)
+
+        self.send_response(response, to=client_socket)
+
+    def format_response(self, response: Response) -> bytes:
+        return f"{self.VERSION} {response.status.value} {response.status.phrase}{self.CRLF}{self.CRLF}".encode()
+
+    def send_response(self, response: Response, *, to: socket.socket):
+        to.send(self.format_response(response))

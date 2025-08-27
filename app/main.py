@@ -8,8 +8,13 @@ from app.router import Router
 router = Router()
 
 
-@router.register(path="/")
-def home(request: Request):
+@router.register(r"/echo(/(?P<string>\w+))?")
+def echo(request, **params):
+    return Response(status=HTTPStatus.OK, body=params["string"])
+
+
+@router.register(path=r"/")
+def home(request: Request, **kwargs):
     return Response(status=HTTPStatus.OK)
 
 

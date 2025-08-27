@@ -1,7 +1,5 @@
 import logging
 import socket
-from http import HTTPStatus
-from textwrap import dedent
 
 from app.models import Response
 from app.models.request import Request
@@ -52,11 +50,20 @@ class HttpServer:
         raw_request = client_socket.recv(self.BUFFER_SIZE).decode()
         request = Request.from_raw(raw_request)
         response = self.router.route(request)
-
         self.send_response(response, to=client_socket)
 
+    def get_headers(self, response: Response) -> str:
+        return self.CRLF.join([
+            "Content-Type: text/plain",
+            f"Content-Length: {len(response.body)}",
+        ])
+
     def format_response(self, response: Response) -> bytes:
-        return f"{self.VERSION} {response.status.value} {response.status.phrase}{self.CRLF}{self.CRLF}".encode()
+        return (
+            f"{self.VERSION} {response.status.value} {response.status.phrase}{self.CRLF}"
+            f"{self.get_headers(response)}{self.CRLF}{self.CRLF}"
+            f"{response.body}"
+        ).encode()
 
     def send_response(self, response: Response, *, to: socket.socket):
         to.send(self.format_response(response))

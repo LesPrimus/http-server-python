@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -10,17 +11,17 @@ from app.models import Request, Response
 
 @dataclass
 class Router:
-    routes: dict[str, Callable] = field(default_factory=dict)
+    routes: dict[re.Pattern[str], Callable] = field(default_factory=dict)
 
     def register(self, path: str):
         def decorator(handler: Callable):
-            self.routes[path] = handler
+            self.routes[re.compile(path)] = handler
             return handler
 
         return decorator
 
     def route(self, request: Request):
         for path, handler in self.routes.items():
-            if path == request.path:
-                return handler(request)
+            if match := path.fullmatch(request.path):
+                return handler(request, **match.groupdict())
         return Response(status=HTTPStatus.NOT_FOUND)

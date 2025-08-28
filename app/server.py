@@ -53,17 +53,20 @@ class HttpServer:
         self.send_response(response, to=client_socket)
 
     def get_headers(self, response: Response) -> str:
-        return self.CRLF.join([
-            "Content-Type: text/plain",
-            f"Content-Length: {len(response.body)}",
-        ])
+        return self.CRLF.join(
+            [
+                "Content-Type: text/plain",
+                f"Content-Length: {len(response.body.strip())}",
+            ]
+        )
 
     def format_response(self, response: Response) -> bytes:
         return (
             f"{self.VERSION} {response.status.value} {response.status.phrase}{self.CRLF}"
             f"{self.get_headers(response)}{self.CRLF}{self.CRLF}"
-            f"{response.body}"
+            f"{response.body.strip()}"
         ).encode()
 
     def send_response(self, response: Response, *, to: socket.socket):
+        print(self.format_response(response))
         to.send(self.format_response(response))

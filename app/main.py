@@ -8,13 +8,20 @@ from app.router import Router
 router = Router()
 
 
+@router.register(r"/user-agent")
+def user_agent(request: Request, **params):
+    return Response(
+        status=HTTPStatus.OK, body=request.headers.get("User-Agent", "Unknown")
+    )
+
+
 @router.register(r"/echo(/(?P<string>\w+))?")
-def echo(request, **params):
+def echo(request: Request, **params):
     return Response(status=HTTPStatus.OK, body=params["string"])
 
 
 @router.register(path=r"/")
-def home(request: Request, **kwargs):
+def home(request: Request, **params):
     return Response(status=HTTPStatus.OK)
 
 

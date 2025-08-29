@@ -1,5 +1,6 @@
 import logging
 import socket
+import threading
 
 from app.models import Response
 from app.models.request import Request
@@ -36,7 +37,7 @@ class HttpServer:
             print(f"Listening on {self.host}:{self.port}")
             while True:
                 (client_socket, client_address) = self.server_socket.accept()
-                self.handle_client(client_socket, client_address)
+                threading.Thread(target=self.handle_client, args=(client_socket, client_address)).start()
 
         except KeyboardInterrupt:
             print("Shutting down server...")

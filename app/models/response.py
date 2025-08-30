@@ -8,3 +8,8 @@ __all__ = ("Response",)
 class Response:
     status: HTTPStatus
     body: str = field(default_factory=str)
+    content_type: str = field(default="text/plain")
+
+    @property
+    def content_length(self):
+        return len(self.body.strip())

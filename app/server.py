@@ -1,6 +1,7 @@
 import logging
 import socket
 import threading
+from os import PathLike
 
 from app.models import Response
 from app.models.request import Request
@@ -15,12 +16,19 @@ class HttpServer:
     BUFFER_SIZE = 1024
 
     def __init__(
-        self, host: str, port: int, router: Router, *, reuse_port: bool = True
+        self,
+        host: str,
+        port: int,
+        router: Router,
+        *,
+        reuse_port: bool = True,
+        directory: PathLike | None = None,
     ):
         self.host = host
         self.port = port
         self.router = router
         self.reuse_port = reuse_port
+        self.directory = directory
         self.server_socket = self._create_socket()
 
     def _create_socket(self):
@@ -37,7 +45,9 @@ class HttpServer:
             print(f"Listening on {self.host}:{self.port}")
             while True:
                 (client_socket, client_address) = self.server_socket.accept()
-                threading.Thread(target=self.handle_client, args=(client_socket, client_address)).start()
+                threading.Thread(
+                    target=self.handle_client, args=(client_socket, client_address)
+                ).start()
 
         except KeyboardInterrupt:
             print("Shutting down server...")
@@ -50,21 +60,22 @@ class HttpServer:
         logger.info(f"Client {client_address[0]}:{client_address[1]}")
         raw_request = client_socket.recv(self.BUFFER_SIZE).decode()
         request = Request.from_raw(raw_request)
+        request.state = {"directory": self.directory}
         response = self.router.route(request)
         self.send_response(response, to=client_socket)
 
-    def get_headers(self, response: Response) -> str:
+    def format_headers(self, response: Response) -> str:
         return self.CRLF.join(
             [
-                "Content-Type: text/plain",
-                f"Content-Length: {len(response.body.strip())}",
+                f"Content-Type: {response.content_type}",
+                f"Content-Length: {response.content_length}",
             ]
         )
 
     def format_response(self, response: Response) -> bytes:
         return (
             f"{self.VERSION} {response.status.value} {response.status.phrase}{self.CRLF}"
-            f"{self.get_headers(response)}{self.CRLF}{self.CRLF}"
+            f"{self.format_headers(response)}{self.CRLF}{self.CRLF}"
             f"{response.body.strip()}"
         ).encode()
 

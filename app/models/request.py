@@ -1,7 +1,9 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from http import HTTPMethod
 
 __all__ = ("Request",)
+
+from typing import Any
 
 from app.utils import get_headers
 
@@ -13,6 +15,7 @@ class Request:
     version: str
     headers: dict[str, str]
     body: str
+    state: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_raw(cls, raw: str):

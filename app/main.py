@@ -1,4 +1,3 @@
-import pathlib
 from http import HTTPStatus
 from os import PathLike
 
@@ -6,31 +5,42 @@ from app.models import Response
 from app.models.request import Request
 from app.server import HttpServer
 from app.router import Router
-from app.utils import get_command_line_args
+from app.utils import get_command_line_args, read_file, write_file
 
 router = Router()
 
 
-@router.register(r"/files/(?P<filename>\w+)")
-def files(request: Request, **params):
+def get_files(request: Request, **params) -> Response:
     try:
-        filename = params["filename"]
+        body = read_file(request, **params)
+        return Response(
+            status=HTTPStatus.OK, content_type="application/octet-stream", body=body
+        )
     except KeyError:
         return Response(status=HTTPStatus.BAD_REQUEST)
-
-    try:
-        directory = pathlib.Path(request.state["directory"])
-    except KeyError:
-        return Response(status=HTTPStatus.INTERNAL_SERVER_ERROR)
-    try:
-        with pathlib.Path(directory / filename).open("r") as f:
-            body = f.read()
     except FileNotFoundError:
         return Response(status=HTTPStatus.NOT_FOUND)
 
-    return Response(
-        status=HTTPStatus.OK, content_type="application/octet-stream", body=body
-    )
+
+def post_files(request: Request, **params) -> Response:
+    try:
+        write_file(request, **params)
+        return Response(status=HTTPStatus.CREATED)
+    except KeyError:
+        return Response(status=HTTPStatus.BAD_REQUEST)
+    except FileNotFoundError:
+        return Response(status=HTTPStatus.NOT_FOUND)
+
+
+@router.register(r"/files/(?P<filename>\w+)")
+def files(request: Request, **params):
+    match request.method:
+        case "GET":
+            return get_files(request, **params)
+        case "POST":
+            return post_files(request, **params)
+        case _:
+            return Response(status=HTTPStatus.METHOD_NOT_ALLOWED)
 
 
 @router.register(r"/user-agent")

@@ -1,3 +1,4 @@
+import gzip
 import logging
 import socket
 import threading
@@ -74,16 +75,22 @@ class HttpServer:
         )
 
     def format_response(self, response: Response) -> bytes:
-        return (
+        buffer =  (
             f"{self.VERSION} {response.status.value} {response.status.phrase}{self.CRLF}"
             f"{self.format_headers(response)}{self.CRLF}{self.CRLF}"
-            f"{response.body.strip()}"
         ).encode()
+        body = response.body.strip()
+        if isinstance(body, str):
+            buffer += body.encode()
+        else:
+            buffer += body
+        return buffer
 
     @classmethod
     def compress_response(cls, compressions: str, response: Response):
         compressions = set(map(str.strip, compressions.split(",")))
         if "gzip" in compressions:
+            response.body = gzip.compress(response.body.encode())
             response.content_encoding = "gzip"
         return response
 

@@ -52,6 +52,7 @@ def user_agent(request: Request, **params):
 
 @router.register(r"/echo(/(?P<string>\w+))?")
 def echo(request: Request, **params):
+    print(request.headers, "//////")
     return Response(status=HTTPStatus.OK, body=params["string"])
 
 

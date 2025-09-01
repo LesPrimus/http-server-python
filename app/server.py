@@ -1,3 +1,4 @@
+import gzip
 import logging
 import socket
 import threading
@@ -62,13 +63,14 @@ class HttpServer:
         request = Request.from_raw(raw_request)
         request.state = {"directory": self.directory}
         response = self.router.route(request)
-        self.send_response(response, to=client_socket)
+        self.send_response(request, response, to=client_socket)
 
     def format_headers(self, response: Response) -> str:
         return self.CRLF.join(
             [
                 f"Content-Type: {response.content_type}",
                 f"Content-Length: {response.content_length}",
+                f"Content-Encoding: {response.content_encoding}",
             ]
         )
 
@@ -79,6 +81,16 @@ class HttpServer:
             f"{response.body.strip()}"
         ).encode()
 
-    def send_response(self, response: Response, *, to: socket.socket):
-        print(self.format_response(response))
+    @classmethod
+    def compress_response(cls, compression: str, response: Response):
+        match compression.strip():
+            case "gzip":
+                response.content_encoding = compression
+                return response
+            case _:
+                return response
+
+    def send_response(self, request: Request, response: Response, *, to: socket.socket):
+        if compression := request.headers.get("Accept-Encoding"):
+            response = self.compress_response(compression, response)
         to.send(self.format_response(response))

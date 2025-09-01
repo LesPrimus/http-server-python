@@ -75,7 +75,7 @@ class HttpServer:
         )
 
     def format_response(self, response: Response) -> bytes:
-        buffer =  (
+        buffer = (
             f"{self.VERSION} {response.status.value} {response.status.phrase}{self.CRLF}"
             f"{self.format_headers(response)}{self.CRLF}{self.CRLF}"
         ).encode()

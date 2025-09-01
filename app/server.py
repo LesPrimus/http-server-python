@@ -1,4 +1,3 @@
-import gzip
 import logging
 import socket
 import threading

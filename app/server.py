@@ -81,13 +81,11 @@ class HttpServer:
         ).encode()
 
     @classmethod
-    def compress_response(cls, compression: str, response: Response):
-        match compression.strip():
-            case "gzip":
-                response.content_encoding = compression
-                return response
-            case _:
-                return response
+    def compress_response(cls, compressions: str, response: Response):
+        compressions = set(map(str.strip, compressions.split(",")))
+        if "gzip" in compressions:
+            response.content_encoding = "gzip"
+        return response
 
     def send_response(self, request: Request, response: Response, *, to: socket.socket):
         if compression := request.headers.get("Accept-Encoding"):

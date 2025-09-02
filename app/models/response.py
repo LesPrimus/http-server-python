@@ -10,6 +10,7 @@ class Response:
     body: str | bytes = field(default_factory=str)
     content_type: str = field(default="text/plain")
     content_encoding: str = field(default="")
+    connection: str = field(default="keep-alive")
 
     @property
     def content_length(self):

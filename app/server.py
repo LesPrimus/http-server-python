@@ -64,7 +64,11 @@ class HttpServer:
             request = Request.from_raw(raw_request)
             request.state = {"directory": self.directory}
             response = self.router.route(request)
+            if must_close := request.headers.get("Connection") == " close":
+                response.connection = "close"
             self.send_response(request, response, to=client_socket)
+            if must_close:
+                client_socket.close()
 
     def format_headers(self, response: Response) -> str:
         return self.CRLF.join(
@@ -72,6 +76,7 @@ class HttpServer:
                 f"Content-Type: {response.content_type}",
                 f"Content-Length: {response.content_length}",
                 f"Content-Encoding: {response.content_encoding}",
+                f"Connection: {response.connection}",
             ]
         )
 

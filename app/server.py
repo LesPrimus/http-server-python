@@ -59,11 +59,12 @@ class HttpServer:
 
     def handle_client(self, client_socket, client_address):
         logger.info(f"Client {client_address[0]}:{client_address[1]}")
-        raw_request = client_socket.recv(self.BUFFER_SIZE).decode()
-        request = Request.from_raw(raw_request)
-        request.state = {"directory": self.directory}
-        response = self.router.route(request)
-        self.send_response(request, response, to=client_socket)
+
+        while raw_request := client_socket.recv(self.BUFFER_SIZE).decode():
+            request = Request.from_raw(raw_request)
+            request.state = {"directory": self.directory}
+            response = self.router.route(request)
+            self.send_response(request, response, to=client_socket)
 
     def format_headers(self, response: Response) -> str:
         return self.CRLF.join(
